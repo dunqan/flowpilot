@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.*
+# Obsidian: keep shared settings, ignore per-user state
+docs/.obsidian/*
+!docs/.obsidian/app.json
