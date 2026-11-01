@@ -4,22 +4,17 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: one dense Markdown-like list; sticky header + pinned benchmark on top, prompt line fixed at the bottom. */
+/* Single dark look, by choice: FlowPilot is dark-first. */
 :root {
-  --bg: #f6f7f5; --surface: #ffffff; --fg: #1d2421; --muted: #6b7570; --line: #dde2de;
-  --accent: #2456c7; --accent-soft: #e4ebfa; --work: #fff1cc; --work-line: #d9a520; --done: #9aa39e;
-  --ok: #1f7a4a; --warn: #a3471b;
+  --bg: #0f1312; --surface: #161b19; --raise: #1d2421; --fg: #e6ebe8; --muted: #8c9792; --line: #262d2a;
+  --accent: #8aa9ff; --accent-fill: #3463e0; --on-accent: #ffffff; --accent-soft: #17233d;
+  --work: #2b2412; --work-line: #d9ad3c; --done: #59625e;
+  --ok: #6fcf97; --warn: #f0a46a;
   --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
   --hdr: 52px;
+  color-scheme: dark;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #141816; --surface: #1b201e; --fg: #e3e8e5; --muted: #8f9994; --line: #2c3330;
-  --accent: #7ea2f5; --accent-soft: #1f2a44; --work: #3a3016; --work-line: #d9a520; --done: #5f6863;
-  --ok: #6fcf97; --warn: #f0a37a; color-scheme: dark } }
-:root[data-theme="dark"] {
-  --bg: #141816; --surface: #1b201e; --fg: #e3e8e5; --muted: #8f9994; --line: #2c3330;
-  --accent: #7ea2f5; --accent-soft: #1f2a44; --work: #3a3016; --work-line: #d9a520; --done: #5f6863;
-  --ok: #6fcf97; --warn: #f0a37a; color-scheme: dark }
 * { box-sizing: border-box }
 body { background: var(--bg); color: var(--fg); font: 15px/1.4 var(--sans); margin: 0; padding-bottom: 120px; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface) }
@@ -28,7 +23,7 @@ header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; backg
 header .wrap { display: flex; align-items: center; gap: 12px; min-height: var(--hdr); flex-wrap: wrap; padding-block: 6px; }
 .ctx { display: flex; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
 .ctx button { border: 0; background: none; color: var(--muted); font: 500 14px var(--sans); padding: 5px 10px; border-radius: 6px; cursor: pointer }
-.ctx button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / .12) }
+.ctx button[aria-pressed="true"] { background: var(--raise); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / .4) }
 .ctx small { font: 12px var(--mono); color: var(--muted); margin-left: 4px }
 .spacer { flex: 1 }
 .tag-poc { font: 12px var(--mono); color: var(--muted) }
@@ -37,7 +32,7 @@ header .wrap { display: flex; align-items: center; gap: 12px; min-height: var(--
 details.tools { position: relative }
 details.tools summary { list-style: none }
 details.tools summary::-webkit-details-marker { display: none }
-details.tools .pop { position: absolute; right: 0; top: 36px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: grid; gap: 4px; width: 270px; box-shadow: 0 6px 20px rgb(0 0 0 / .15); z-index: 8 }
+details.tools .pop { position: absolute; right: 0; top: 36px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: grid; gap: 4px; width: 270px; box-shadow: 0 6px 20px rgb(0 0 0 / .5); z-index: 8 }
 .pop button { text-align: left; border: 0; background: none; color: var(--fg); font: 14px var(--sans); padding: 8px; border-radius: 6px; cursor: pointer }
 .pop button:hover { background: var(--bg) }
 
@@ -69,7 +64,7 @@ ol.list { list-style: none; margin: 0; padding: 0 }
 .row input { flex: 1; font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--accent); border-radius: 4px; padding: 3px 6px }
 .rbs { display: flex; gap: 6px; flex: none }
 .rb { border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 500 13px var(--sans); padding: 3px 10px; border-radius: 6px; cursor: pointer }
-.rb.pri { background: var(--accent); border-color: var(--accent); color: var(--surface) }
+.rb.pri { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent) }
 
 #prompt { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px) }
 #prompt .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding-block: 10px }
@@ -86,14 +81,14 @@ kbd { font: 12px var(--mono); border: 1px solid var(--line); border-bottom-width
 #capture .wrap { display: flex; gap: 10px; align-items: center; padding-block: 10px; flex-wrap: wrap }
 #capture input { flex: 1 1 260px; font: 16px var(--sans); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; min-width: 0 }
 #capture .keys { font: 12px var(--mono); color: var(--muted) }
-#fab { display: none; position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 6; width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--accent); color: var(--surface); font: 600 26px var(--sans); box-shadow: 0 4px 12px rgb(0 0 0 / .25) }
+#fab { display: none; position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 6; width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--accent-fill); color: var(--on-accent); font: 600 26px var(--sans); box-shadow: 0 4px 12px rgb(0 0 0 / .25) }
 
 #menu { position: fixed; z-index: 9; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px; display: grid; gap: 2px; min-width: 200px; box-shadow: 0 8px 24px rgb(0 0 0 / .2) }
 #menu button { text-align: left; border: 0; background: none; color: var(--fg); font: 15px var(--sans); padding: 10px 12px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; gap: 16px }
 #menu button:hover { background: var(--bg) }
 #menu kbd { color: var(--muted) }
 
-#help { position: fixed; inset: 0; z-index: 9; background: rgb(0 0 0 / .35); display: grid; place-items: center; padding: 16px }
+#help { position: fixed; inset: 0; z-index: 9; background: rgb(0 0 0 / .6); display: grid; place-items: center; padding: 16px }
 #help .card { background: var(--surface); color: var(--fg); border-radius: 12px; padding: 20px 22px; max-width: 520px; width: 100%; max-height: 85vh; overflow: auto }
 #help h2 { margin: 0 0 10px; font-size: 17px }
 #help table { border-collapse: collapse; width: 100%; font-size: 14px }
