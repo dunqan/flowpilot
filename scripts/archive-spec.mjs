@@ -9,8 +9,8 @@
 // (`[[20-specs/<slug>...]]` -> `[[20-specs/implemented/<slug>...]]`), then run `docs-check links`.
 // Bare wikilinks need no rewriting (basenames are unique); body links are never touched.
 
-import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 
 const root = process.cwd();
@@ -37,6 +37,7 @@ const posix = (p) => p.replace(/\\/g, '/');
 
 // 1. move
 if (!dry) execSync(`git ls-files --error-unmatch "${posix(from)}"`, { stdio: 'ignore' });
+if (!dry) mkdirSync(dirname(to), { recursive: true });
 sh(`git mv "${posix(from)}" "${posix(to)}"`);
 
 // 2. status flip

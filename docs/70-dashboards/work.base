@@ -1,0 +1,43 @@
+filters:
+  and:
+    - file.inFolder("20-specs") || file.inFolder("50-runs") || file.inFolder("25-system") || file.inFolder("30-adr")
+views:
+  - type: table
+    name: Specs
+    filters:
+      and:
+        - type == "spec"
+    order:
+      - file.name
+      - status
+      - milestone
+      - created
+  - type: table
+    name: Active runs
+    filters:
+      and:
+        - type == "run"
+        - status != "done"
+    order:
+      - file.name
+      - branch
+      - status
+      - spec
+  - type: table
+    name: System pages
+    filters:
+      and:
+        - type == "system"
+    order:
+      - file.name
+      - area
+      - verified
+  - type: table
+    name: ADRs
+    filters:
+      and:
+        - type == "adr"
+    order:
+      - file.name
+      - status
+      - created
