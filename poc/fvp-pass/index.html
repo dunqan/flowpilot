@@ -1,0 +1,599 @@
+<title>FVP Pass Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one dense Markdown-like list; sticky header + pinned benchmark on top, prompt line fixed at the bottom. */
+/* Single dark look, by choice: FlowPilot is dark-first. */
+:root {
+  --bg: #0f1312; --surface: #161b19; --raise: #1d2421; --fg: #e6ebe8; --muted: #8c9792; --line: #262d2a;
+  --accent: #8aa9ff; --accent-fill: #3463e0; --on-accent: #ffffff; --accent-soft: #17233d;
+  --work: #2b2412; --work-line: #d9ad3c; --done: #59625e;
+  --ok: #6fcf97; --warn: #f0a46a;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --hdr: 52px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 15px/1.4 var(--sans); margin: 0; padding-bottom: 120px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface) }
+.wrap { max-width: 860px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+header .wrap { display: flex; align-items: center; gap: 12px; min-height: var(--hdr); flex-wrap: wrap; padding-block: 6px; }
+.ctx { display: flex; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
+.ctx button { border: 0; background: none; color: var(--muted); font: 500 14px var(--sans); padding: 5px 10px; border-radius: 6px; cursor: pointer }
+.ctx button[aria-pressed="true"] { background: var(--raise); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / .4) }
+.ctx small { font: 12px var(--mono); color: var(--muted); margin-left: 4px }
+.spacer { flex: 1 }
+.tag-poc { font: 12px var(--mono); color: var(--muted) }
+.hbtn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 500 13px var(--sans); padding: 6px 10px; border-radius: 6px; cursor: pointer }
+.hbtn:focus-visible, .ctx button:focus-visible, .rb:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+details.tools { position: relative }
+details.tools summary { list-style: none }
+details.tools summary::-webkit-details-marker { display: none }
+details.tools .pop { position: absolute; right: 0; top: 36px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: grid; gap: 4px; width: 270px; box-shadow: 0 6px 20px rgb(0 0 0 / .5); z-index: 8 }
+.pop button { text-align: left; border: 0; background: none; color: var(--fg); font: 14px var(--sans); padding: 8px; border-radius: 6px; cursor: pointer }
+.pop button:hover { background: var(--bg) }
+
+#pinned { position: fixed; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h, 53px)); z-index: 4; background: var(--accent-soft); border-bottom: 1px solid var(--line) }
+#pinned .wrap { display: flex; align-items: center; gap: 10px; min-height: 38px }
+#pinned .lbl { font: 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--accent) }
+#pinned .txt { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.flash { animation: flash 150ms ease-out }
+@keyframes flash { from { background: var(--work) } }
+
+.outcomes { color: var(--muted); font-size: 13px; padding-block: 10px 4px }
+ol.list { list-style: none; margin: 0; padding: 0 }
+.row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 4px 8px; border-radius: 6px; cursor: default; user-select: none; -webkit-touch-callout: none }
+.row .mk { width: 14px; flex: none; color: var(--accent); text-align: center }
+.row .t { flex: 1; min-width: 0; overflow-wrap: anywhere }
+.row .tg { flex: none; font: 12px var(--mono); color: var(--muted) }
+.row.done .t { text-decoration: line-through; color: var(--done) }
+.row.done .tg { color: var(--done) }
+.row.dotted .t { font-weight: 500 }
+.row.bench { box-shadow: inset 2px 0 0 var(--accent) }
+.row.cur { background: var(--accent-soft) }
+.row.working { background: var(--work); box-shadow: inset 3px 0 0 var(--work-line) }
+.row.dim { opacity: .38 }
+.row.pending { border: 1px dashed var(--accent); color: var(--accent) }
+.row.pending .t.ghost { color: var(--muted); font-style: italic }
+.row.enter { animation: enter 150ms ease-out }
+@keyframes enter { from { transform: translateX(-12px); opacity: 0 } }
+.row.end { color: var(--muted); font: 13px var(--mono); justify-content: center }
+.row input { flex: 1; font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--accent); border-radius: 4px; padding: 3px 6px }
+.rbs { display: flex; gap: 6px; flex: none }
+.rb { border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 500 13px var(--sans); padding: 3px 10px; border-radius: 6px; cursor: pointer }
+.rb.pri { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent) }
+
+#prompt { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px) }
+#prompt .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding-block: 10px }
+#prompt .q { font-weight: 600; flex: 1 1 280px; min-width: 0 }
+#prompt .keys { font: 12px var(--mono); color: var(--muted) }
+#prompt input { flex: 1 1 260px; font: 15px var(--sans); color: var(--fg); background: var(--bg); border: 1px solid var(--accent); border-radius: 6px; padding: 7px 9px; min-width: 0 }
+#prompt input::placeholder { color: var(--muted); font-style: italic }
+kbd { font: 12px var(--mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; color: var(--fg) }
+#notice { background: var(--work); border-bottom: 1px solid var(--work-line) }
+#notice .wrap { display: flex; gap: 10px; align-items: center; padding-block: 8px; font-size: 14px }
+#notice .wrap span { flex: 1 }
+
+#capture { position: fixed; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h, 53px)); z-index: 7; background: var(--surface); border-bottom: 2px solid var(--accent); box-shadow: 0 6px 16px rgb(0 0 0 / .12) }
+#capture .wrap { display: flex; gap: 10px; align-items: center; padding-block: 10px; flex-wrap: wrap }
+#capture input { flex: 1 1 260px; font: 16px var(--sans); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; min-width: 0 }
+#capture .keys { font: 12px var(--mono); color: var(--muted) }
+#fab { display: none; position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 6; width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--accent-fill); color: var(--on-accent); font: 600 26px var(--sans); box-shadow: 0 4px 12px rgb(0 0 0 / .25) }
+
+#menu { position: fixed; z-index: 9; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px; display: grid; gap: 2px; min-width: 200px; box-shadow: 0 8px 24px rgb(0 0 0 / .2) }
+#menu button { text-align: left; border: 0; background: none; color: var(--fg); font: 15px var(--sans); padding: 10px 12px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; gap: 16px }
+#menu button:hover { background: var(--bg) }
+#menu kbd { color: var(--muted) }
+
+#help { position: fixed; inset: 0; z-index: 9; background: rgb(0 0 0 / .6); display: grid; place-items: center; padding: 16px }
+#help .card { background: var(--surface); color: var(--fg); border-radius: 12px; padding: 20px 22px; max-width: 520px; width: 100%; max-height: 85vh; overflow: auto }
+#help h2 { margin: 0 0 10px; font-size: 17px }
+#help table { border-collapse: collapse; width: 100%; font-size: 14px }
+#help td { padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: top }
+#help td:first-child { white-space: nowrap; width: 1% }
+#help h3 { font: 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 4px }
+
+@media (pointer: coarse), (max-width: 640px) {
+  #prompt .keys, .tag-poc { display: none }
+  #fab { display: block }
+  .row { min-height: 44px }
+  .rb { padding: 8px 16px; font-size: 15px }
+  #capBtn { display: none }
+}
+@media (prefers-reduced-motion: reduce) { .row.enter, .flash { animation: none } }
+</style>
+
+<header id="hdr">
+  <div class="wrap">
+    <div class="ctx" id="ctx" role="group" aria-label="Context"></div>
+    <span class="tag-poc">POC 1 · FVP pass</span>
+    <span class="spacer"></span>
+    <button class="hbtn" id="capBtn" type="button">+ Capture <kbd>c</kbd></button>
+    <button class="hbtn" id="helpBtn" type="button" aria-label="All keys">?</button>
+    <details class="tools" id="tools">
+      <summary class="hbtn" aria-label="Prototype tools">⋯</summary>
+      <div class="pop">
+        <button type="button" id="simExt">Simulate: benchmark completed elsewhere (D14)</button>
+        <button type="button" id="resetBtn">Reset the chain (Shift+R)</button>
+        <button type="button" id="clearBtn">Clear done items (Shift+X)</button>
+        <button type="button" id="restart">Restart demo data</button>
+      </div>
+    </details>
+  </div>
+</header>
+<div id="pinned" hidden><div class="wrap"><span class="lbl">Benchmark</span><span class="txt" id="pinTxt"></span><button class="rb pri" id="pinWork" type="button">Work</button></div></div>
+<div id="capture" hidden><div class="wrap">
+  <input id="capIn" type="text" autocomplete="off" placeholder="New item… add [[Project]] to file it">
+  <span class="keys"><kbd>Enter</kbd> add · <kbd>Shift+Enter</kbd> add another · <kbd>Esc</kbd> close</span>
+  <button class="rb pri" id="capAdd" type="button">Add</button>
+</div></div>
+<main class="wrap">
+  <div class="outcomes" id="outcomes"></div>
+  <ol class="list" id="list"></ol>
+</main>
+<button id="fab" type="button" aria-label="Capture">+</button>
+<div id="prompt"><div id="notice" hidden><div class="wrap"><span id="noticeTxt"></span><button class="rb" id="noticeX" type="button">Dismiss</button></div></div><div class="wrap" id="promptIn"></div></div>
+<div id="menu" hidden></div>
+<div id="help" hidden><div class="card">
+  <h2>Keys</h2>
+  <h3>Scanning</h3>
+  <table>
+    <tr><td><kbd>↓</kbd> <kbd>j</kbd></td><td>No, next item</td></tr>
+    <tr><td><kbd>↑</kbd> <kbd>k</kbd></td><td>Back, changes nothing</td></tr>
+    <tr><td><kbd>Space</kbd></td><td>Dot: this becomes the benchmark</td></tr>
+    <tr><td><kbd>Enter</kbd></td><td>Work on the benchmark</td></tr>
+  </table>
+  <h3>Item at the cursor</h3>
+  <table>
+    <tr><td><kbd>e</kbd></td><td>Fix in place (typos)</td></tr>
+    <tr><td><kbd>r</kbd></td><td>Re-write to end (real change)</td></tr>
+    <tr><td><kbd>x</kbd></td><td>Done, or nothing to do with it</td></tr>
+    <tr><td><kbd>w</kbd> <kbd>s</kbd></td><td>Waiting / someday (leaves the list)</td></tr>
+  </table>
+  <h3>Working</h3>
+  <table>
+    <tr><td><kbd>x</kbd></td><td>Done; scanning resumes after it</td></tr>
+    <tr><td><kbd>r</kbd></td><td>Stop unfinished and re-write it at the end</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Leave working mode without changing anything</td></tr>
+  </table>
+  <h3>Re-writing</h3>
+  <table>
+    <tr><td>type</td><td>Replace the item</td></tr>
+    <tr><td><kbd>Tab</kbd></td><td>Pull the original in to tweak it (phone: tap “Use original”)</td></tr>
+    <tr><td><kbd>Enter</kbd> <kbd>Esc</kbd></td><td>Save; with nothing typed, the original is kept</td></tr>
+  </table>
+  <h3>Anywhere</h3>
+  <table>
+    <tr><td><kbd>c</kbd></td><td>Capture to the end of the list</td></tr>
+    <tr><td><kbd>u</kbd> <kbd>Ctrl+Z</kbd></td><td>Undo</td></tr>
+    <tr><td><kbd>Alt+1</kbd>…<kbd>3</kbd></td><td>Work · Personal · Mixed</td></tr>
+    <tr><td><kbd>Shift+R</kbd></td><td>Reset the chain (asks first)</td></tr>
+    <tr><td><kbd>Shift+X</kbd></td><td>Clear done items (asks first)</td></tr>
+    <tr><td><kbd>?</kbd></td><td>This sheet</td></tr>
+  </table>
+  <h3>Phone</h3>
+  <p style="margin:4px 0 0;font-size:14px">The cursor row has <b>No</b> and <b>Dot</b>. Tap the benchmark or <b>Work</b> to work on it; then <b>Done</b> or <b>Stop</b>. Tap a row to move the cursor there. Long-press (or right-click) a row for its actions.</p>
+  <p style="margin:14px 0 0"><button class="rb pri" id="helpX" type="button">Close</button></p>
+</div></div>
+
+<script>
+(() => {
+'use strict';
+const KEY = 'flowpilot-poc1-v1';
+const PROJECT_CTX = { 'Atlas': 'work', 'Team ops': 'work', 'Conf. talk': 'work', 'Herb app': 'personal', 'Home': 'personal', 'Spanish': 'personal' };
+const PAUSED = new Set(['Spanish']);
+const CTX = [['work', 'Work'], ['personal', 'Personal'], ['mixed', 'Mixed']];
+
+function demo() {
+  const items = [];
+  let n = 0;
+  const add = (ctx, text, project = null, status = 'open') => { const id = 'i' + (++n); items.push({ id, text, project, ctx, status }); return id; };
+  // Work: the S2 excerpt items that are Work-eligible (sample portfolio, scenarios.md)
+  add('work', 'Reply to Atlas kickoff email', 'Atlas', 'done');
+  add('work', 'Map legacy DB tables to new schema', 'Atlas');
+  add('work', "Review Piotr's PR on auth module", 'Team ops');
+  add('work', 'Draft talk abstract', 'Conf. talk');
+  add('work', 'Fix CI flake in payments tests', 'Team ops');
+  add('work', 'Ask IT for staging DB credentials', 'Atlas');
+  add('work', 'Write migration dry-run script', 'Atlas');
+  add('work', 'Update timesheet', 'Team ops');
+  // Personal: the 55-item S7 appendix
+  const P = [
+    ['Renew passport', null, 'done'], ['Call mum about Christmas plans', null, 'done'], ['Return the wrong-size jacket', null, 'done'],
+    ['Book plumber for bathroom quote', 'Home'], ['Set up herb-app repo', 'Herb app', 'done'], ['Sort out photo backup'],
+    ['Sketch plant-detail screen', 'Herb app'], ['Dentist appointment', null, 'done'], ['Read DDIA chapter 4'],
+    ['Pay electricity bill, due Friday', 'Home'], ['Choose tiles for bathroom (on contractor’s catalogue)', 'Home', 'waiting'],
+    ['Try watering-reminder notification API', 'Herb app'], ['Spanish: finish chapter 6', 'Spanish'], ['Fix bike brakes'],
+    ["Plan Kasia's birthday gift (birthday in 12 days)"], ['Cancel unused streaming subscription', null, 'done'],
+    ['Research standing desks'], ['Clean out garage shelf'], ['Ask neighbour about shared fence'],
+    ['Herb app: decide on plant database source', 'Herb app'], ['Book car service', null, 'done'], ['Update CV'],
+    ['Back up old laptop before selling'], ['Sell old laptop'], ['lightbulb hallway'], ['Write thank-you note to Ania'],
+    ['Herb app: pick a name', 'Herb app'], ['Order contact lenses'], ['dr?'], ['Pick up parcel from locker', null, 'done'],
+    ['Insurance: send photos of bathroom water damage', 'Home'], ['Find a running route near the new office'],
+    ['Book weekend trip for May'], ['that thing for Ania'], ['Herb app: write the README', 'Herb app'],
+    ['Buy shower sealant', 'Home', 'done'], ['Compare electricity tariffs'], ['Call the bank about the card limit'],
+    ['Return library books'], ['Plan the balcony planting'], ['Herb app: try a dark-mode palette', 'Herb app'],
+    ['Backup phone photos to NAS'], ['Repaint the hallway corner', 'Home'], ['Call insurance about bathroom claim', 'Home'],
+    ['Prepare tax documents (deadline April)'], ['Sign up for a pottery class', null, 'someday'], ['Fix the wobbly kitchen chair'],
+    ['Rewrite personal site', null, 'someday'], ['Check the warranty on the dishwasher'], ['Order a birthday cake for Kasia'],
+    ['Herb app: onboarding sketch', 'Herb app'], ['Organise the cable drawer'], ['Clean the bathroom drain', 'Home'],
+    ['Look into a NAS upgrade'], ['Renew the gym membership'],
+  ];
+  const pid = P.map(([t, p, s]) => add('personal', t, p || null, s || 'open'));
+  return {
+    v: 1, items, n, ctx: 'work',
+    cs: {
+      work: { chain: [], cursor: null, working: false },
+      personal: { chain: [pid[3], pid[14], pid[30]], cursor: pid[37], working: false }, // P4 → P15 → P31, scan at P38
+      mixed: { chain: [], cursor: null, working: false },
+    },
+  };
+}
+
+let S = load() || demo();
+const undoStack = [];
+const ui = { mode: null, queue: [], confirm: null, editId: null, menuId: null, flashPin: false, justAdded: null, notice: null };
+
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); return s && s.v === 1 ? s : null; } catch { return null; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch { /* storage unavailable */ } }
+
+const byId = id => S.items.find(i => i.id === id);
+const cs = () => S.cs[S.ctx];
+function view(c = S.ctx) {
+  return S.items.filter(i => !i.cleared && (c === 'mixed' || i.ctx === c) && (i.status === 'open' || i.status === 'done') && !PAUSED.has(i.project));
+}
+const bench = (c = S.ctx) => { const ch = S.cs[c].chain; return ch.length ? ch[ch.length - 1] : null; };
+function nextOpenAfter(v, id, c) {
+  const chain = new Set(S.cs[c].chain);
+  let i = id == null ? -1 : v.findIndex(x => x.id === id);
+  if (i < 0 && id != null) { const g = S.items.findIndex(x => x.id === id); i = v.findIndex(x => S.items.indexOf(x) > g) - 1; if (i < -1) i = v.length - 1; }
+  for (let k = i + 1; k < v.length; k++) if (v[k].status === 'open' && !chain.has(v[k].id)) return v[k].id;
+  return 'END';
+}
+
+// Keep a context's chain and cursor consistent with the items (after any change, incl. external ones).
+function sanitize(c, explain) {
+  const st = S.cs[c], v = view(c);
+  const open = new Set(v.filter(i => i.status === 'open').map(i => i.id));
+  const before = bench(c);
+  st.chain = st.chain.filter(id => open.has(id));
+  if (!st.chain.length) {
+    st.working = false;
+    const first = v.find(i => i.status === 'open');
+    if (first) { st.chain = [first.id]; st.cursor = nextOpenAfter(v, first.id, c); } else st.cursor = 'END';
+  }
+  const b = bench(c);
+  const bi = v.findIndex(i => i.id === b);
+  if (st.cursor !== 'END') {
+    const ci = v.findIndex(i => i.id === st.cursor);
+    if (ci < 0 || ci <= bi || !open.has(st.cursor)) st.cursor = nextOpenAfter(v, ci < 0 ? st.cursor : (ci <= bi ? b : st.cursor), c);
+  }
+  if (before !== b) { ui.flashPin = true; if (explain && before) ui.notice = `“${byId(before).text}” ${explain}; now comparing against “${b ? byId(b).text : 'nothing'}”.`; }
+}
+
+function mutate(fn) {
+  undoStack.push(JSON.stringify(S));
+  if (undoStack.length > 200) undoStack.shift();
+  fn();
+  CTX.forEach(([c]) => sanitize(c));
+  save(); render();
+}
+function undo() {
+  const s = undoStack.pop();
+  if (!s) { toastPrompt('Nothing to undo'); return; }
+  S = JSON.parse(s); ui.mode = null; ui.queue = []; ui.editId = null; save(); render(); revealCursor();
+}
+
+function parseProject(text) {
+  const m = text.match(/\[\[([^\]]+)\]\]/);
+  return m ? { text: text.replace(m[0], '').replace(/\s+/g, ' ').trim(), project: m[1].trim() } : { text: text.trim(), project: null };
+}
+function appendItem(text, project, ctx) {
+  const id = 'i' + (++S.n);
+  S.items.push({ id, text, project, ctx, status: 'open' });
+  CTX.forEach(([c]) => { if (S.cs[c].cursor === 'END' && view(c).some(i => i.id === id)) S.cs[c].cursor = id; });
+  ui.justAdded = id;
+  return id;
+}
+
+// ---- actions
+function moveNo() {
+  const st = cs(); if (st.working || st.cursor === 'END') return;
+  st.cursor = nextOpenAfter(view(), st.cursor, S.ctx); save(); render(); revealCursor();
+}
+function moveBack() {
+  const st = cs(); if (st.working) return;
+  const v = view(), chain = new Set(st.chain), bi = v.findIndex(i => i.id === bench());
+  const ci = st.cursor === 'END' ? v.length : v.findIndex(i => i.id === st.cursor);
+  for (let k = ci - 1; k > bi; k--) if (v[k].status === 'open' && !chain.has(v[k].id)) { st.cursor = v[k].id; break; }
+  save(); render(); revealCursor();
+}
+function dot() {
+  const st = cs(); if (st.working || st.cursor === 'END' || !st.cursor) return;
+  mutate(() => { st.chain.push(st.cursor); st.cursor = nextOpenAfter(view(), st.cursor, S.ctx); ui.flashPin = true; });
+  revealCursor();
+}
+function startWork() {
+  const st = cs(); if (!bench()) return;
+  st.working = true; save(); render();
+  const el = rowEl(bench()); if (el) reveal(el);
+}
+function leaveWork() { cs().working = false; save(); render(); }
+function finishWork(done) {
+  const st = cs(), b = bench(); if (!b) return;
+  const it = byId(b);
+  mutate(() => {
+    it.status = 'done'; if (!done) it.reentered = true;
+    st.chain.pop(); st.working = false;
+    st.cursor = nextOpenAfter(view(), b, S.ctx);
+  });
+  if (!done) startRewrite([{ text: it.text, project: it.project, ctx: it.ctx }], 'Stopped. Re-write it at the end');
+  revealCursor();
+}
+function act(id, kind) {
+  const it = byId(id); if (!it || it.status !== 'open') return;
+  if (kind === 'e') { ui.editId = id; render(); const inp = document.getElementById('fixIn'); if (inp) { inp.focus(); inp.select(); } return; }
+  const st = cs();
+  mutate(() => {
+    const nxt = st.cursor === id ? nextOpenAfter(view(), id, S.ctx) : st.cursor;
+    if (kind === 'x') it.status = 'done';
+    if (kind === 'w') it.status = 'waiting';
+    if (kind === 's') it.status = 'someday';
+    if (kind === 'r') { it.status = 'done'; it.reentered = true; }
+    CTX.forEach(([c]) => { S.cs[c].chain = S.cs[c].chain.filter(x => x !== id); });
+    st.cursor = nxt;
+  });
+  if (kind === 'r') startRewrite([{ text: it.text, project: it.project, ctx: it.ctx }], 'Re-write at the end');
+  else toastPrompt({ x: 'Done', w: 'Moved to waiting', s: 'Moved to someday' }[kind] + ` · “${it.text}” · u to undo`);
+  revealCursor();
+}
+function askReset() {
+  const ch = cs().chain; if (!ch.length) return;
+  ask(`Reset ${ch.length} dotted item${ch.length > 1 ? 's' : ''} to the end?`, () => {
+    const items = ch.slice().reverse().map(byId);
+    mutate(() => { items.forEach(it => { it.status = 'done'; it.reentered = true; }); cs().chain = []; cs().working = false; });
+    startRewrite(items.map(it => ({ text: it.text, project: it.project, ctx: it.ctx })), 'Reset. Re-write at the end');
+  });
+}
+function askClear() {
+  const d = view().filter(i => i.status === 'done'); if (!d.length) return;
+  ask(`Clear ${d.length} done item${d.length > 1 ? 's' : ''}?`, () => mutate(() => d.forEach(i => { i.cleared = true; })));
+}
+function simulateExternal() {
+  const b = bench(); document.getElementById('tools').open = false; if (!b) return;
+  undoStack.push(JSON.stringify(S));
+  byId(b).status = 'done';
+  sanitize(S.ctx, 'was completed elsewhere');
+  CTX.forEach(([c]) => sanitize(c));
+  save(); render();
+  clearTimeout(simulateExternal.t); simulateExternal.t = setTimeout(() => { ui.notice = null; render(); }, 8000);
+}
+function switchCtx(c) { if (ui.mode === 'rewrite') return; S.ctx = c; sanitize(c); ui.mode = null; save(); render(); revealCursor(true); }
+
+// ---- modes: rewrite (ghost text), confirm, capture, help
+function startRewrite(queue, label) { ui.mode = 'rewrite'; ui.queue = queue; ui.rwLabel = label; render(); focusPromptInput(); }
+function commitRewrite(value) {
+  const r = ui.queue.shift(); if (!r) return;
+  document.getElementById('promptIn').innerHTML = '';
+  const typed = value.trim();
+  const p = typed ? parseProject(typed) : { text: r.text, project: null };
+  mutate(() => appendItem(p.text || r.text, p.project || r.project, p.project ? (PROJECT_CTX[p.project] || r.ctx) : r.ctx));
+  if (ui.queue.length) { render(); focusPromptInput(); } else { ui.mode = null; render(); }
+}
+function ask(text, onYes) { ui.mode = 'confirm'; ui.confirm = { text, onYes }; render(); }
+function answer(yes) { const c = ui.confirm; ui.mode = null; ui.confirm = null; if (yes) c.onYes(); else render(); }
+function openCapture() { if (ui.mode === 'rewrite') return; ui.prevFocus = document.activeElement; document.getElementById('capture').hidden = false; const i = document.getElementById('capIn'); i.value = ''; i.focus({ preventScroll: true }); }
+function closeCapture() { document.getElementById('capture').hidden = true; document.getElementById('capIn').blur(); if (ui.prevFocus && ui.prevFocus.focus) ui.prevFocus.focus({ preventScroll: true }); }
+function addCapture(keepOpen) {
+  const inp = document.getElementById('capIn'); const raw = inp.value.trim(); if (!raw) { if (!keepOpen) closeCapture(); return; }
+  const p = parseProject(raw);
+  const ctx = p.project && PROJECT_CTX[p.project] ? PROJECT_CTX[p.project] : (S.ctx === 'mixed' ? 'work' : S.ctx);
+  mutate(() => appendItem(p.text, p.project, ctx));
+  toastPrompt(`Added to the end of ${ctx === 'work' ? 'Work' : 'Personal'}: “${p.text}”`);
+  inp.value = '';
+  if (!keepOpen) closeCapture();
+}
+
+// ---- rendering
+const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+const rowEl = id => document.querySelector(`.row[data-id="${id}"]`);
+let toastMsg = null, toastT;
+function toastPrompt(m) { toastMsg = m; clearTimeout(toastT); toastT = setTimeout(() => { toastMsg = null; renderPrompt(); }, 2500); renderPrompt(); }
+
+function render() {
+  const st = cs(), v = view(), b = bench(), chain = new Set(st.chain);
+  document.getElementById('ctx').innerHTML = CTX.map(([c, l], k) => {
+    const open = view(c).filter(i => i.status === 'open').length;
+    return `<button type="button" data-ctx="${c}" aria-pressed="${c === S.ctx}" title="Alt+${k + 1}">${l}<small>${open}</small></button>`;
+  }).join('');
+  const hidden = S.items.filter(i => (S.ctx === 'mixed' || i.ctx === S.ctx) && !i.cleared && (i.status === 'waiting' || i.status === 'someday' || (PAUSED.has(i.project) && i.status === 'open')));
+  document.getElementById('outcomes').textContent = hidden.length ? `${hidden.length} not in this list: ${hidden.filter(i => i.status === 'waiting').length} waiting, ${hidden.filter(i => i.status === 'someday').length} someday, ${hidden.filter(i => PAUSED.has(i.project) && i.status === 'open').length} paused` : '';
+
+  let html = '';
+  for (const it of v) {
+    const isB = it.id === b, isC = it.id === st.cursor && !st.working, isW = st.working && isB;
+    const cls = ['row', it.status === 'done' && 'done', chain.has(it.id) && 'dotted', isB && 'bench', isC && 'cur', isW && 'working', st.working && !isB && 'dim', it.id === ui.justAdded && 'enter'].filter(Boolean).join(' ');
+    let mid;
+    if (ui.editId === it.id) mid = `<input id="fixIn" type="text" value="${esc(it.text)}" aria-label="Fix in place">`;
+    else mid = `<span class="t">${esc(it.text)}</span>`;
+    let btns = '';
+    if (isC) btns = `<span class="rbs"><button class="rb" data-a="no" type="button">No</button><button class="rb pri" data-a="dot" type="button">Dot</button></span>`;
+    if (isW) btns = `<span class="rbs"><button class="rb pri" data-a="done" type="button">Done</button><button class="rb" data-a="stop" type="button">Stop</button></span>`;
+    else if (isB && !st.working && ui.mode !== 'rewrite') btns = `<span class="rbs"><button class="rb" data-a="work" type="button">Work</button></span>`;
+    html += `<li class="${cls}" data-id="${it.id}"><span class="mk">${chain.has(it.id) ? '●' : ''}</span>${mid}${btns}<span class="tg">${it.project ? esc(it.project) : ''}</span></li>`;
+  }
+  if (ui.mode === 'rewrite' && ui.queue[0]) html += `<li class="row pending" id="pendingRow"><span class="mk">+</span><span class="t ghost" id="pendingTxt">${esc(ui.queue[0].text)}</span><span class="tg">${ui.queue[0].project ? esc(ui.queue[0].project) : ''}</span></li>`;
+  if (st.cursor === 'END' && !st.working) html += `<li class="row end cur">end of list · Enter to work on the benchmark</li>`;
+  if (!v.length) html += `<li class="row end">Nothing eligible in this context</li>`;
+  document.getElementById('list').innerHTML = html;
+  ui.justAdded = null;
+
+  document.getElementById('pinTxt').textContent = b ? byId(b).text : '';
+  document.getElementById('pinWork').hidden = st.working;
+  const pin = document.getElementById('pinned');
+  if (ui.flashPin) { pin.classList.remove('flash'); void pin.offsetWidth; pin.classList.add('flash'); ui.flashPin = false; }
+  const n = document.getElementById('notice'); n.hidden = !ui.notice; document.getElementById('noticeTxt').textContent = ui.notice || '';
+  renderPrompt(); updatePinned();
+  const fx = document.getElementById('fixIn');
+  if (fx) { fx.focus(); fx.addEventListener('blur', () => { if (ui.editId !== fx.closest('.row').dataset.id) return; const id = ui.editId, t = fx.value.trim(); ui.editId = null; if (t && t !== byId(id).text) mutate(() => { byId(id).text = t; }); else render(); }); }
+}
+
+function renderPrompt() {
+  const st = cs(), b = bench(), bt = b ? `“${esc(byId(b).text)}”` : '';
+  const box = document.getElementById('promptIn');
+  if (ui.mode === 'rewrite') {
+    if (box.querySelector('#rwIn')) return; // keep the input alive while typing
+    const r = ui.queue[0];
+    box.innerHTML = `<span class="q" style="flex:0 1 auto">${esc(ui.rwLabel)}${ui.queue.length > 1 ? ` (${ui.queue.length} left)` : ''}:</span>
+      <input id="rwIn" type="text" autocomplete="off" placeholder="${esc(r.text)}" aria-label="Re-write">
+      <button class="rb" id="rwGhost" type="button">Use original</button>
+      <span class="keys">type to re-write · <kbd>Tab</kbd> tweak original · <kbd>Enter</kbd>/<kbd>Esc</kbd> save (blank keeps it)</span>`;
+    return;
+  }
+  let q, keys = '', extra = '';
+  if (toastMsg) { q = esc(toastMsg); }
+  else if (ui.mode === 'confirm') {
+    q = esc(ui.confirm.text); keys = `<kbd>Enter</kbd> yes · <kbd>Esc</kbd> no`;
+    extra = `<span class="rbs"><button class="rb pri" data-a="yes" type="button">Yes</button><button class="rb" data-a="nope" type="button">No</button></span>`;
+  } else if (!b) { q = 'Nothing to compare in this context.'; keys = `<kbd>c</kbd> capture · <kbd>?</kbd> keys`; }
+  else if (st.working) { q = `Working on ${bt}`; keys = `<kbd>x</kbd> done · <kbd>r</kbd> stop &amp; re-write · <kbd>Esc</kbd> back to scanning · <kbd>c</kbd> capture`; }
+  else if (st.cursor === 'END') { q = `End of list. Work on ${bt}?`; keys = `<kbd>Enter</kbd> work · <kbd>↑</kbd> back · <kbd>Shift+R</kbd> reset · <kbd>?</kbd> keys`; }
+  else { q = `Want this more than ${bt}?`; keys = `<kbd>↓</kbd> no · <kbd>Space</kbd> dot · <kbd>Enter</kbd> work on benchmark · <kbd>e r x w s</kbd> · <kbd>u</kbd> undo · <kbd>?</kbd>`; }
+  box.innerHTML = `<span class="q">${q}</span>${extra}<span class="keys">${keys}</span>`;
+}
+
+function focusPromptInput() {
+  const i = document.getElementById('rwIn'); if (!i) return;
+  i.focus({ preventScroll: true });
+  i.addEventListener('input', () => { const t = document.getElementById('pendingTxt'); if (t) { t.textContent = i.value || ui.queue[0].text; t.classList.toggle('ghost', !i.value); } });
+  i.addEventListener('keydown', e => {
+    if (e.key === 'Tab') { e.preventDefault(); if (!i.value) { i.value = ui.queue[0].text; i.dispatchEvent(new Event('input')); } }
+    else if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); commitRewrite(e.key === 'Escape' && !i.value ? '' : i.value); }
+  });
+  i.addEventListener('blur', () => setTimeout(() => { if (ui.mode === 'rewrite' && document.getElementById('rwIn') === i && document.activeElement !== i && !ui.ghostTap) commitRewrite(i.value); ui.ghostTap = false; }, 0));
+  const g = document.getElementById('rwGhost');
+  g.addEventListener('pointerdown', () => { ui.ghostTap = true; });
+  g.addEventListener('click', () => { if (!i.value) { i.value = ui.queue[0].text; i.dispatchEvent(new Event('input')); } i.focus(); });
+}
+
+// ---- scrolling: keep the cursor visible between the sticky top and the prompt line, never jump otherwise
+function topInset() { return document.getElementById('hdr').getBoundingClientRect().bottom + 40; }
+function reveal(el) {
+  const r = el.getBoundingClientRect(), top = topInset() + 4, bottom = innerHeight - document.getElementById('prompt').offsetHeight - 8;
+  if (r.top < top) scrollBy(0, r.top - top); else if (r.bottom > bottom) scrollBy(0, r.bottom - bottom);
+}
+function revealCursor(center) {
+  const st = cs(); const el = st.cursor === 'END' ? document.querySelector('.row.end') : rowEl(st.cursor);
+  if (!el) return;
+  if (center) { const r = el.getBoundingClientRect(); scrollBy(0, r.top - innerHeight / 2); } else reveal(el);
+}
+function updatePinned() {
+  document.documentElement.style.setProperty('--hdr-h', document.getElementById('hdr').offsetHeight + 'px');
+  const b = bench(), el = b && rowEl(b), pin = document.getElementById('pinned');
+  if (!el) { pin.hidden = true; return; }
+  const r = el.getBoundingClientRect(), hb = document.getElementById('hdr').getBoundingClientRect().bottom;
+  pin.hidden = !(r.bottom < hb + 2 || r.top > innerHeight - document.getElementById('prompt').offsetHeight);
+}
+addEventListener('scroll', () => requestAnimationFrame(updatePinned), { passive: true });
+addEventListener('resize', updatePinned);
+
+// ---- keyboard
+addEventListener('keydown', e => {
+  const inInput = e.target.matches && e.target.matches('input');
+  if (inInput) {
+    if (e.target.id === 'capIn') { if (e.key === 'Enter') { e.preventDefault(); addCapture(e.shiftKey); } else if (e.key === 'Escape') closeCapture(); }
+    if (e.target.id === 'fixIn') {
+      if (e.key === 'Enter') { const t = e.target.value.trim(); const id = ui.editId; ui.editId = null; if (t && t !== byId(id).text) mutate(() => { byId(id).text = t; }); else render(); }
+      else if (e.key === 'Escape') { ui.editId = null; render(); }
+    }
+    return;
+  }
+  if (!document.getElementById('help').hidden) { if (e.key === 'Escape' || e.key === '?') { e.preventDefault(); document.getElementById('help').hidden = true; } return; }
+  if (!document.getElementById('menu').hidden && e.key === 'Escape') { closeMenu(); return; }
+  if (ui.mode === 'confirm') { if (e.key === 'Enter') { e.preventDefault(); answer(true); } else if (e.key === 'Escape') answer(false); return; }
+  if (ui.mode === 'rewrite') return;
+  if (e.altKey && /^[1-3]$/.test(e.key)) { e.preventDefault(); switchCtx(CTX[+e.key - 1][0]); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest && e.target.closest('button, summary') && (e.key === 'Enter' || e.key === ' ')) return;
+  const st = cs(), k = e.key;
+  if (k === '?') { document.getElementById('help').hidden = false; return; }
+  if (k === 'c') { e.preventDefault(); openCapture(); return; }
+  if (k === 'u') { undo(); return; }
+  if (k === 'R') { askReset(); return; }
+  if (k === 'X') { askClear(); return; }
+  if (k === 'Escape') { if (ui.notice) { ui.notice = null; render(); } else if (st.working) leaveWork(); return; }
+  if (st.working) {
+    if (k === 'x') finishWork(true);
+    else if (k === 'r') finishWork(false);
+    return;
+  }
+  if (k === 'ArrowDown' || k === 'j') { e.preventDefault(); moveNo(); }
+  else if (k === 'ArrowUp' || k === 'k') { e.preventDefault(); moveBack(); }
+  else if (k === ' ') { e.preventDefault(); dot(); }
+  else if (k === 'Enter') { e.preventDefault(); startWork(); }
+  else if ('erxws'.includes(k) && st.cursor && st.cursor !== 'END') act(st.cursor, k);
+});
+
+// ---- pointer / touch
+const list = document.getElementById('list');
+let lp = null;
+list.addEventListener('pointerdown', e => {
+  const row = e.target.closest('.row[data-id]'); if (!row || e.target.closest('button,input')) return;
+  const x = e.clientX, y = e.clientY;
+  lp = { id: row.dataset.id, x, y, fired: false, t: setTimeout(() => { lp.fired = true; openMenu(row.dataset.id, x, y); }, 500) };
+});
+list.addEventListener('pointermove', e => { if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 8) { clearTimeout(lp.t); lp = null; } });
+list.addEventListener('pointerup', () => { if (lp) clearTimeout(lp.t); });
+list.addEventListener('contextmenu', e => { const row = e.target.closest('.row[data-id]'); if (!row) return; e.preventDefault(); if (lp) { clearTimeout(lp.t); if (lp.fired) return; } openMenu(row.dataset.id, e.clientX, e.clientY); });
+list.addEventListener('click', e => {
+  if (lp && lp.fired) { lp = null; return; }
+  lp = null;
+  const btn = e.target.closest('button[data-a]');
+  if (btn) { ({ no: moveNo, dot, work: startWork, done: () => finishWork(true), stop: () => finishWork(false) })[btn.dataset.a](); return; }
+  const row = e.target.closest('.row[data-id]'); if (!row || ui.mode || ui.editId) return;
+  const st = cs(), id = row.dataset.id, it = byId(id);
+  if (id === bench() && !st.working) { startWork(); return; }
+  if (st.working || it.status !== 'open' || st.chain.includes(id)) return;
+  const v = view(), bi = v.findIndex(i => i.id === bench());
+  if (v.findIndex(i => i.id === id) > bi) { st.cursor = id; save(); render(); }
+});
+document.getElementById('promptIn').addEventListener('click', e => { const b = e.target.closest('button[data-a]'); if (b) answer(b.dataset.a === 'yes'); });
+
+function openMenu(id, x, y) {
+  const it = byId(id); if (!it || it.status !== 'open') return;
+  ui.menuId = id;
+  const m = document.getElementById('menu');
+  m.innerHTML = [['e', 'Fix in place'], ['r', 'Re-write to end'], ['x', 'Done'], ['w', 'Waiting'], ['s', 'Someday']]
+    .map(([k, l]) => `<button type="button" data-k="${k}">${l}<kbd>${k}</kbd></button>`).join('');
+  m.hidden = false;
+  const w = m.offsetWidth, h = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(x, innerWidth - w - 8)) + 'px';
+  m.style.top = Math.max(8, Math.min(y, innerHeight - h - 8)) + 'px';
+}
+function closeMenu() { document.getElementById('menu').hidden = true; ui.menuId = null; }
+document.getElementById('menu').addEventListener('click', e => { const b = e.target.closest('button[data-k]'); if (!b) return; const id = ui.menuId; closeMenu(); act(id, b.dataset.k); });
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#menu') && !document.getElementById('menu').hidden) setTimeout(closeMenu, 0); if (!e.target.closest('#tools')) document.getElementById('tools').open = false; });
+
+document.getElementById('ctx').addEventListener('click', e => { const b = e.target.closest('button[data-ctx]'); if (b) switchCtx(b.dataset.ctx); });
+document.getElementById('pinned').addEventListener('click', e => { if (!cs().working && (e.target.id === 'pinWork' || e.target.closest('.txt'))) startWork(); });
+document.getElementById('capBtn').addEventListener('click', openCapture);
+document.getElementById('fab').addEventListener('click', openCapture);
+document.getElementById('capAdd').addEventListener('click', () => addCapture(false));
+document.getElementById('helpBtn').addEventListener('click', () => { document.getElementById('help').hidden = false; });
+document.getElementById('helpX').addEventListener('click', () => { document.getElementById('help').hidden = true; });
+document.getElementById('noticeX').addEventListener('click', () => { ui.notice = null; render(); });
+document.getElementById('simExt').addEventListener('click', simulateExternal);
+document.getElementById('resetBtn').addEventListener('click', () => { document.getElementById('tools').open = false; askReset(); });
+document.getElementById('clearBtn').addEventListener('click', () => { document.getElementById('tools').open = false; askClear(); });
+// mouse clicks must not leave focus on a button, or Space/Enter would press it instead of driving the pass
+document.addEventListener('click', e => { const b = e.target.closest('button, summary'); if (b && e.detail > 0) b.blur(); });
+document.getElementById('restart').addEventListener('click', () => { document.getElementById('tools').open = false; mutate(() => { S = demo(); }); revealCursor(true); });
+
+CTX.forEach(([c]) => sanitize(c));
+render(); revealCursor(true);
+})();
+</script>
