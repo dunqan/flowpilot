@@ -4,6 +4,8 @@
 **Working name:** FlowPilot  
 **Purpose of this document:** Capture the product idea and establish the brief for separate product-design and technical-specification phases. This is not an implementation specification.
 
+**Revision 2026-11-01 — no maintenance rituals.** The main thing FVP has over GTD is that it needs no upkeep step: no inbox to process, no weekly review to hold. FlowPilot keeps it that way. New items go straight onto the list and are dealt with through ordinary FVP passes. "Review" means reading summaries (deterministic now, AI later), never a scheduled step. This revision changes §1, §3, §4, §5B, §5D, §6, §7 and §9.
+
 ## Part I — Product concept
 
 ### 1. Vision
@@ -12,9 +14,9 @@ FlowPilot is a **Markdown-native personal work and attention orchestration syste
 
 It combines:
 - **Final Version Perfected (FVP)** as a human-directed method for selecting work;
-- **selected GTD principles** for capturing, clarifying, tracking, and reviewing commitments;
-- **weekly goals and portfolio visibility** for maintaining direction across projects; and
-- **AI assistance** for understanding progress, surfacing overlooked work, and suggesting improvements.
+- **a few GTD vocabulary ideas** (next action, waiting, someday), used as plain item states rather than lists that need processing;
+- **optional weekly outcomes and portfolio visibility** for maintaining direction across projects; and
+- **summaries and AI assistance** for understanding progress, surfacing overlooked work, and suggesting improvements, so no review ritual is needed.
 
 The guiding promise is: **Stay aware of everything that matters without having to focus on everything at once.**
 
@@ -40,7 +42,7 @@ The fundamental need is to **separate visibility, eligibility, selection, and co
 3. **One overview, multiple contexts.** Bring together many sources while allowing Work, Personal, Mixed, or custom selection contexts.
 4. **Switching is legitimate.** Support natural interleaving of work across projects while helping detect unproductive fragmentation.
 5. **Visibility is not obligation.** A project can remain visible without being selected for work; intentional pauses should be respected.
-6. **GTD informs organization, not bureaucracy.** Borrow useful concepts without requiring adoption of the entire methodology.
+6. **No maintenance rituals.** The list is the inbox. Nothing has to be processed, triaged or reviewed before work can continue. Capturing means adding to the list, clarifying happens when an item comes up in an FVP pass, and reviewing means reading a summary. GTD supplies vocabulary only, never steps.
 7. **AI advises; the user decides.** Suggestions are explainable, linked to source material where possible, and subject to approval before changes.
 8. **Local-first and durable.** Files remain accessible, and essential functionality works without AI or a cloud service.
 
@@ -48,10 +50,10 @@ The fundamental need is to **separate visibility, eligibility, selection, and co
 
 | Concern | Question | Primary mechanism |
 |---|---|---|
-| Capture | What has arrived or occurred to me? | Inbox and Markdown notes |
-| Organization | What is an actionable next step, a project, or something waiting? | Lightweight GTD concepts |
+| Capture | What has arrived or occurred to me? | Append to the list (in the app or in Markdown); no separate inbox |
+| Organization | What is an actionable next step, a project, or something waiting? | Item states set in passing, when an item comes up during FVP |
 | Visibility | What is happening across all commitments? | God's-eye overview |
-| Direction | What outcomes matter this week? | Weekly goals and reviews |
+| Direction | What outcomes matter this week? | Optional weekly outcomes; summaries instead of reviews |
 | Eligibility | What work fits my current context? | Context and workspace filters |
 | Selection | What should I work on next? | FVP selection session |
 | Concentration | What deserves repeated attention right now? | Optional flexible 3T/5T-style focus buffer |
@@ -67,29 +69,29 @@ A unified portfolio view of projects and personal areas across multiple Markdown
 
 The purpose is to answer: **What is happening, what needs attention, and what might I be overlooking?** It should avoid misleading progress scores or alerts based only on raw task counts.
 
-#### B. Weekly cockpit
+#### B. Weekly outcomes and summaries
 
-A lightweight place to define and review a few **outcomes for the week**, potentially spanning several projects. Weekly outcomes guide attention without imposing a rigid schedule or replacing FVP's task selection. Projects without weekly goals remain visible and can still receive work.
+An optional, lightweight place to note a few **outcomes for the week**, potentially spanning several projects. Weekly outcomes guide attention without imposing a rigid schedule or replacing FVP's task selection. Projects without weekly outcomes remain visible and can still receive work.
 
-Support a simple review rhythm: review recent progress, identify commitments and risks, choose or revise weekly outcomes, and reflect on what actually advanced.
+There is no review step. Instead, FlowPilot offers a **summary** whenever the user wants one: what advanced, what stalled, what was added, and which outcomes have evidence of progress. In the MVP the summary is deterministic, built from completions, edits and dates. Later, AI makes it richer. Reading it is optional, and nothing waits on the user having read it.
 
 #### C. FVP workspace
 
 An authentic FVP task-selection experience over eligible actions drawn from multiple projects. It should preserve ordered selection, comparisons, chain/session progress, and relevant re-entry/continuation behavior.
 
-Users should be able to work across projects naturally. Context-specific sessions (e.g. Work, Personal, Mixed) may be paused and resumed. If eligibility or underlying tasks change, the application must handle potentially stale selection state transparently rather than silently changing a chain.
+Users should be able to work across projects naturally. Context-specific sessions (e.g. Work, Personal, Mixed) may be paused and resumed. If eligibility or underlying tasks change, the application keeps the selection state consistent. External Markdown edits apply silently, except that a change to the current benchmark (the last dotted item) gets a brief, non-blocking notice, so the comparison never swaps unnoticed.
 
 An optional 3T/5T-inspired **focus buffer** may support sustained effort, but is not the complete inventory of important work or a requirement to cover every project equally.
 
 #### D. Projects, knowledge, and capture
 
-Read and edit existing Markdown documents, maintain project outcomes and next actions, and offer lightweight GTD-inspired Inbox, Waiting For, and Someday/Maybe concepts. A project may span more than one folder or source. FlowPilot should coexist with Obsidian, but not require it.
+Read and edit existing Markdown documents and maintain project outcomes and next actions. Capture is just adding to the list: a new item goes to the end, FVP-style, and gets considered on the next pass. There is no inbox to empty. "Waiting" and "someday" are states an item can carry, set in passing when it comes up. They are not separate lists to maintain. A project may span more than one folder or source. FlowPilot should coexist with Obsidian, but not require it.
 
 #### E. AI assistance
 
 AI acts as an **attention and knowledge assistant**, not an autonomous manager. Potential uses include:
 - Summarizing what changed in a project or across the portfolio.
-- Preparing weekly reviews and suggesting candidate weekly outcomes.
+- Writing weekly and portfolio summaries (in place of a review ritual) and suggesting candidate weekly outcomes.
 - Detecting missing next actions, ambiguous tasks, neglected commitments, or possible blockers.
 - Pointing out related work, dependencies, and opportunities to combine efforts across projects.
 - Answering questions over authorized Markdown sources with evidence links.
@@ -98,14 +100,14 @@ Basic facts such as file changes, elapsed time, and explicit due dates should be
 
 ### 6. Illustrative workflow
 
-1. Capture tasks and notes in existing Markdown files or through FlowPilot.
+1. Capture by adding items to the list, in existing Markdown files or through FlowPilot. There is no inbox to process later.
 2. A persistent engine notices edits and keeps a unified view current.
-3. Open the God's-eye overview to assess the whole portfolio.
-4. Set or revisit a few weekly outcomes; intentionally pause others where appropriate.
+3. Open the God's-eye overview to assess the whole portfolio, whenever wanted.
+4. Optionally note a few weekly outcomes; intentionally pause projects where appropriate.
 5. Choose a context (e.g. Work on weekdays, Personal on weekends).
-6. Use FVP to select actions from currently eligible work across projects.
+6. Use FVP to select actions from currently eligible work across projects. Clarify, defer or mark items as waiting when they come up.
 7. Switch between projects at natural stopping points; optionally keep a small focus buffer.
-8. Use periodic reviews and AI insights to discover gaps and adjust the next actions or goals.
+8. Read a summary when curious. Summaries and, later, AI insights surface gaps without requiring a review session.
 
 ## Part II — Brief for subsequent design phases
 
@@ -114,16 +116,17 @@ Basic facts such as file changes, elapsed time, and explicit due dates should be
 Design an approachable interface with **three primary surfaces**:
 
 - **God's-eye overview:** portfolio-wide situation awareness and drill-down.
-- **Weekly cockpit:** outcomes, progress evidence, and reflection.
+- **Weekly outcomes and summaries:** optional outcomes and on-demand progress evidence, with no review ritual.
 - **FVP workspace:** faithful, low-friction selection and execution across eligible tasks.
 
-Supporting surfaces may include capture/inbox, project and document views, source management, and AI review.
+Supporting surfaces may include quick capture onto the list (not an inbox), project and document views, source management, and AI summaries.
 
 The design phase should explore:
 - How to keep many projects visible without creating dashboard noise.
 - How work/personal/custom contexts affect eligibility and ongoing FVP sessions.
 - How users compare tasks in FVP without losing the method's original character.
 - How weekly outcomes guide activity without becoming forced task rankings.
+- How capture, clarification and "waiting" fit into the FVP flow so that no separate maintenance step ever appears.
 - How AI suggestions communicate evidence, uncertainty, and user control.
 - How a focus buffer can encourage completion without becoming a restrictive pool.
 
@@ -156,7 +159,7 @@ Validate the core idea with a narrow end-to-end slice:
 3. Reflect edits made externally and safely update original files from the app.
 4. Run and resume an authentic cross-project FVP session.
 5. Switch between at least Work and Personal contexts without discarding state.
-6. Add a minimal weekly-outcomes view and basic attention signals.
+6. Add minimal optional weekly outcomes, a deterministic summary and basic attention signals, with no inbox or review step.
 
 AI summaries and suggestions are a natural next increment once task identity, file synchronization, and session semantics are reliable. Avoid complex agent automation, scheduling, and elaborate priority scoring initially.
 
@@ -181,6 +184,7 @@ The concept succeeds if it lets the user:
 - Exclude work during personal time, then resume it without organizational friction.
 - Make tangible progress toward weekly outcomes while remaining free to interleave projects.
 - Notice neglected projects and unclear commitments early, without excessive alerts or administration.
+- Never face a maintenance chore (inbox to empty, review to hold) before getting back to work.
 - Continue to own and use the Markdown files independently of the app.
 
 ---
