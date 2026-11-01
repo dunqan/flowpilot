@@ -13,7 +13,7 @@ sources:
   - .github
 specs: []
 adrs: [0001-record-architecture-decisions, 0002-pnpm-typescript-workspace]
-verified: 2026-11-01 7d960f5
+verified: 2026-11-01 4b26704
 tags: [system]
 ---
 
