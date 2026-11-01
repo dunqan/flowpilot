@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "baseBranch": "main",
+  "validation": {
+    "commands": ["pnpm run typecheck", "pnpm run lint", "pnpm run test", "pnpm run build"],
+    "quick": ["pnpm run typecheck", "pnpm run lint", "pnpm run test"]
+  },
+  "docs": {
+    "docsRoot": "docs",
+    "systemRoot": "docs/25-system",
+    "sourceRoots": ["apps", "packages"],
+    "ownedDirs": ["apps/*", "packages/*"],
+    "ownerIgnore": ["**/*.spec.*", "**/*.test.*", "**/*-e2e/**", "**/tsconfig*.json", "**/eslint.config.*", "**/README.md", "**/AGENTS.md"],
+    "lessonsIndex": "docs/lessons.md",
+    "lessonsDir": "docs/lessons",
+    "agentsMd": { "rootMaxBytes": 24576, "rootMaxLines": 200, "chainMaxBytes": 32768 },
+    "waiverPattern": "^Docs:\\s*not-needed",
+    "linkIgnore": ["^PLACEHOLDER:"],
+    "linkSkipDirs": ["docs/templates", "docs/60-research/agentic-sdlc"]
+  }
+}
