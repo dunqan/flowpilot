@@ -79,7 +79,7 @@ There is no review step. Instead, FlowPilot offers a **summary** whenever the us
 
 An authentic FVP task-selection experience over eligible actions drawn from multiple projects. It should preserve ordered selection, comparisons, chain/session progress, and relevant re-entry/continuation behavior.
 
-Users should be able to work across projects naturally. Context-specific sessions (e.g. Work, Personal, Mixed) may be paused and resumed. If eligibility or underlying tasks change, the application must handle potentially stale selection state transparently rather than silently changing a chain.
+Users should be able to work across projects naturally. Context-specific sessions (e.g. Work, Personal, Mixed) may be paused and resumed. If eligibility or underlying tasks change, the application keeps the selection state consistent. External Markdown edits apply silently, except that a change to the current benchmark (the last dotted item) gets a brief, non-blocking notice, so the comparison never swaps unnoticed.
 
 An optional 3T/5T-inspired **focus buffer** may support sustained effort, but is not the complete inventory of important work or a requirement to cover every project equally.
 

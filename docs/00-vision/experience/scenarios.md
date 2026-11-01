@@ -46,7 +46,7 @@ These are inputs to the experience overview. The numbers are stable, so designs 
 - **D11 — A project is an optional wikilink in the item text**, e.g. `- buy shower sealant [[Home]]`. No project is fine. AI may suggest one later (M2).
 - **D12 — Context comes from the source, and a project can override it.** Each registered source has a default context, a project may override it, and items without a project follow their source. Nothing is set per item.
 - **D13 — Context switch** is an always-visible toggle with one-key shortcuts. Each context keeps its own chain and scan position. Nothing switches automatically.
-- **D14 — External changes are applied silently.** A change made elsewhere (e.g. an item completed in Obsidian) is applied with no notice.
+- **D14 — External changes are applied silently, with one exception.** Edits made in the Markdown files elsewhere (e.g. in Obsidian) just show up in the list, with no notice. The exception: if the change alters the **pinned benchmark**, so the item you are comparing against is done, edited or gone, a one-line, dismissable notice says so, e.g. *"'Fix CI flake' was completed elsewhere; now comparing against 'Review Piotr's PR'"*. It never blocks and never asks for a decision.
 
 **Waiting and dependencies**
 - **D15 — Waiting items never come back automatically.** A waiting view lists them with age warnings. Taking one out of waiting re-enters it at the end (D4).
@@ -147,13 +147,13 @@ Each scenario has a **story**, what **must feel right**, the **no-maintenance ch
 
 ### S5 — The weekend switch, and edits from elsewhere
 
-**Story.** It is Saturday, and Ola switches to **Personal** with one key. The Work chain (#3, #6) and scan position are kept intact. Personal has its own pass over #4, 7, 10, 12, 13. During the weekend, Ola ticks off "Fix CI flake" (#6) in Obsidian on their phone, because a colleague fixed it. On Monday Ola switches back to Work. #6 is simply gone from the chain, and the benchmark is "Review Piotr's PR".
+**Story.** It is Saturday, and Ola switches to **Personal** with one key. The Work chain (#3, #6) and scan position are kept intact. Personal has its own pass over #4, 7, 10, 12, 13. During the weekend, Ola ticks off "Fix CI flake" (#6) in Obsidian on their phone, because a colleague fixed it. On Monday Ola switches back to Work. #6 was the benchmark, so a one-line notice says: *"'Fix CI flake' was completed elsewhere; now comparing against 'Review Piotr's PR'"*. Any other external edits just show up.
 
-**Must feel right.** Switching context is instant and lossless. External changes are applied quietly: the list just reflects the files.
+**Must feel right.** Switching context is instant and lossless. External changes are applied quietly, so the list just reflects the files. The only thing that ever announces itself is a change to the item you are comparing against.
 
-**No-maintenance check.** Nothing to reconcile by hand, and no notices to acknowledge.
+**No-maintenance check.** Nothing to reconcile by hand. The single possible notice is information that dismisses itself, not a task.
 
-**Resolved.** D13 (instant toggle, per-context chain and position), D1 (Mixed = union in list order), D14 (silent update).
+**Resolved.** D13 (instant toggle, per-context chain and position), D1 (Mixed = union in list order), D14 (silent update, except a one-line notice when the benchmark changes).
 
 ### S6 — Friday: what actually happened?
 
