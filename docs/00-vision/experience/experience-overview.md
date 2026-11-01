@@ -167,7 +167,7 @@ There are no numeric targets (D26). Fluid means these rules hold, and a POC sess
 | Overview readable in seconds; neglect quiet but noticeable | Design | S1 |
 | Waiting and summary: light, never a chore | Design | S4, S6 |
 
-Every design covers both the desktop and the phone (D22). Every POC runs on the sample portfolio in [[scenarios]].
+Every design covers both the desktop and the phone (D22). Every POC runs on the sample portfolio in [[scenarios]]. Design briefs, one per scenario: [[design-briefs]].
 
 ## Deferred
 
